@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from "prop-types";
 import ReactDOM from 'react-dom';
-import { Modal, Button, Tooltip, Input,Icon } from 'antd';
+import { Modal, Button, Tooltip, Input, Icon } from 'antd';
 import DotsVerticalIcon from "mdi-react/DotsVerticalIcon";
 
 export default class ToolShare extends React.Component {
@@ -11,7 +11,7 @@ export default class ToolShare extends React.Component {
         {
             visible: false,
             application: 'SFU',
-         };
+        };
     }
     showModal = () => {
         this.setState({
@@ -20,7 +20,7 @@ export default class ToolShare extends React.Component {
 
         let loginInfo = this.props.loginInfo;
         let host = window.location.host;
-        let url = window.location.protocol + "//" + host + "/?room=" + loginInfo.roomId;
+        let url = window.location.protocol + "//" + host + "/?room=" + loginInfo.Language;
         this.setState({ url });
     }
     handleOk = (e) => {
@@ -42,12 +42,12 @@ export default class ToolShare extends React.Component {
         return (
             <div className="app-header-tool-container">
                 <Tooltip title='Shared conference'>
-                <Button ghost size="large" type="link" onClick={this.showModal}>
-                  <Icon
-                    component={DotsVerticalIcon}
-                    style={{ display: "flex", justifyContent: "center" }}
-                  />
-                </Button>
+                    <Button ghost size="large" type="link" onClick={this.showModal}>
+                        <Icon
+                            component={DotsVerticalIcon}
+                            style={{ display: "flex", justifyContent: "center" }}
+                        />
+                    </Button>
                 </Tooltip>
                 <Modal
                     title='Shared conference'

@@ -1,25 +1,20 @@
 import React from "react";
 import { Form, Icon, Input, Button, Checkbox, notification, Avatar, Badge, Tooltip } from "antd";
-import { LocalStream } from 'ion-sdk-js';
 import { reactLocalStorage } from "reactjs-localstorage";
 import "../styles/css/login.scss";
-
+import { AutoComplete } from 'antd';
 import CheckIcon from "mdi-react/CheckIcon";
-import ShuffleIcon from "mdi-react/ShuffleIcon";
-import NetworkIcon from "mdi-react/NetworkIcon";
 import ServerNetworkIcon from "mdi-react/ServerNetworkIcon";
 import GoogleClassroomIcon from "mdi-react/GoogleClassroomIcon";
 import ProgressClockIcon from "mdi-react/ProgressClockIcon";
 import ProgressAlertIcon from "mdi-react/ProgressAlertIcon";
 import ProgressCloseIcon from "mdi-react/ProgressCloseIcon";
-import VideoCheckIcon from "mdi-react/VideoCheckIcon";
 import UploadLockIcon from "mdi-react/UploadLockIcon";
-import SwapVerticalIcon from "mdi-react/SwapVerticalIcon";
 import DownloadLockIcon from "mdi-react/DownloadLockIcon";
-
-
-
-
+import { LanguageCodes } from "./data/language"
+const language = LanguageCodes.map(val => val.name)
+import axios from "axios"
+import { v4 as uuidv4 } from 'uuid';
 const TEST_STEPS = {
   biz: { title: 'Biz Websocket', icon: <ServerNetworkIcon /> },
   lobby: { title: 'Joining Test Room', icon: <GoogleClassroomIcon /> },
@@ -40,38 +35,7 @@ const ICONS = {
 };
 
 
-const DEFAULT_STATE = {
-  isConfirmed: false,
-  newUrl: null,
-  testing: null,
-  success: null,
-  steps: TEST_STEPS
-};
-const ConnectionStep = ({ step }) => {
-  const color = (
-    step.status === 'pending' ? null :
-      step.status === 'warning' || step.status === 'no candidates' ? 'orange' :
-        step.status === 'error' ? 'red' :
-          'green');
-  const Icon = ICONS[step.status];
-
-  return <div className='test-connection-step'>
-    <Badge count={Icon ? <Icon style={{ color }} /> : null}>
-      <Tooltip title={<>
-        {step.title}
-        {step.status ? ": " + step.status : null}
-        {step.info ? <div>{step.info}</div> : null}
-      </>}
-      >
-        <Avatar shape="square" size="large" icon={step.icon} />
-      </Tooltip>
-    </Badge>
-  </div>;
-};
-
-let testUpdateLoop = null;
 class LoginForm extends React.Component {
-  state = DEFAULT_STATE;
 
 
   componentDidMount = () => {
@@ -84,26 +48,26 @@ class LoginForm extends React.Component {
 
     let params = this.getRequest();
 
-    let roomId = 'room1';
-    let displayName = 'Guest';
+    let Language = 'room1';
+    let Level = 'Guest';
     let audioOnly = false;
 
     let localStorage = reactLocalStorage.getObject("loginInfo");
 
     if (localStorage) {
-      roomId = localStorage.roomId || 'test';
-      displayName = localStorage.displayName || 'DEVIL';
+      Language = localStorage.Language || 'None';
+      Level = localStorage.Level || 'None';
       audioOnly = localStorage.audioOnly;
-      console.log('localStorage:' + roomId + ' ' + displayName);
+      console.log('localStorage:' + Language + ' ' + Level);
     }
 
     if (params && params.hasOwnProperty('room')) {
-      roomId = params.room;
+      Language = params.room;
     }
     this.setState({ newUrl: reactLocalStorage.getObject("newUrl") })
     form.setFieldsValue({
-      'roomId': roomId,
-      'displayName': displayName,
+      'Language': Language,
+      'Level': Level,
       'audioOnly': audioOnly,
     });
 
@@ -121,16 +85,7 @@ class LoginForm extends React.Component {
     });
   };
 
-  _testStep(step, status, info = null) {
-    const prior = this.state.steps[step];
-    this.setState({
-      steps: {
-        ...this.state.steps,
-        [step]: { ...prior, status, info }
-      }
-    });
-    console.log('Test Connection:', step, status, info);
-  }
+
 
   _stopMediaStream = async (stream) => {
     let tracks = stream.getTracks();
@@ -140,8 +95,6 @@ class LoginForm extends React.Component {
   };
 
   _cleanup = async () => {
-    if (testUpdateLoop)
-      clearInterval(testUpdateLoop);
     if (this.stream) {
       await this._stopMediaStream(this.stream);
       await this.stream.unpublish();
@@ -150,116 +103,37 @@ class LoginForm extends React.Component {
       await this.client.leave();
   };
 
-  _testConnection = async () => {
-    this.setState({ test: true })
-    this._testStep('biz', 'pending');
-    let client = this.props.createClient();
-    let testUpdateLoop = null;
-
-
-    window.onunload = () => {
-      cleanup()
-    }
-
-    client.on("transport-open", async () => {
-      this._testStep('biz', 'connected', client.url);
-      this._testStep('lobby', 'pending');
-      const rid = 'lobby-' + Math.floor(1000000 * Math.random());
-      await this.client.join(rid, { name: 'lobby-user' });
-      this._testStep('lobby', 'joined', 'room id=' + rid);
-      const localStream = await LocalStream.getUserMedia({
-        codec: 'VP8',
-        resolution: 'hd',
-        bandwidth: 1024,
-        audio: true,
-        video: true,
-      });
-
-      this._testStep('publish', 'pending');
-
-      const publish = await client.publish(localStream);
-
-      let nominated = null;
-
-      const testConnectionUpdateLoop = () => {
-        updateConnectionStats();
-        const subStatus = this.state.steps.subscribe.status;
-        if (subStatus === 'pending' || subStatus === 'error') {
-          trySubscribe();
-        }
-      };
-      testUpdateLoop = setInterval(testConnectionUpdateLoop, 3000);
-      setTimeout(testConnectionUpdateLoop, 150);
-
-      const trySubscribe = async () => {
-        const mid = client.local.mid;
-        let tracks = {}
-
-        try {
-          for (let track of localStream.getTracks()) {
-            tracks[`${mid} ${track.id}`] = {
-              codec: track.codec,
-              fmtp: "",
-              id: track.id,
-              pt: client.local.transport.rtp[0].payload,
-              type: track.kind,
-            };
-          }
-        } catch (e) { console.log("No tracks yet...") }
-
-        if (!mid) return;
-        client.knownStreams.set(mid, objToStrMap(tracks));
-
-
-        console.log('Trying to subscribe to ...', mid);
-
-        try {
-          let stream = await client.subscribe(mid);
-          this._testStep('subscribe', 'subscribed', 'mid: ' + mid);
-
-        } catch (e) {
-          console.log(e)
-          this._testStep('subscribe', 'error');
-        }
-
-      };
-
-      const updateConnectionStats = async () => {
-        const report = await client.local.transport.pc.getStats();
-        const stats = {};
-        for (let [name, stat] of report) {
-          stats[name] = stat;
-          if (stat.nominated) {
-            nominated = stat;
-          }
-        }
-
-        if (nominated) {
-          const latency = nominated.currentRoundTripTime;
-          const availableBitrate = nominated.availableOutgoingBitrate;
-          const info = `${localStream.getTracks().length} tracks, ${Math.floor(latency / 1000.0)}ms latency` + (
-            availableBitrate ? `, ${Math.floor(availableBitrate / 1024)}kbps available` : "");
-          this._testStep('publish', 'published', info);
-        } else {
-          this._testStep('publish', 'no candidates');
-        }
-
-      };
-
-      this._testStep('subscribe', 'pending');
-
-    });
-
-    window.test_client = this.client = client;
-  };
 
   handleSubmit = e => {
+
     e.preventDefault();
-    this.props.form.validateFields((err, values) => {
+    this.props.form.validateFields(async (err, values) => {
       if (!err) {
         const handleLogin = this.props.handleLogin;
-        handleLogin(values);
-        console.log("Received values of form: ", values);
+        var data = JSON.stringify({
+          "user_id": uuidv4(),
+          "language": values.language,
+          "level": values.level
+        });
+        var config = {
+          method: 'POST',
+          url: 'http://localhost:8443/room',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          data: data
+        };
+        this.props.handleLoading(true)
+        try {
+          const response = await axios(config)
+          if (response.status == 200) {
+            let info = { ...values, roomId: response.data.data }
+            handleLogin(info);
+          }
+        } catch (error) {
+          console.log("==========================================", error);
+          this.props.handleLoading(false)
+        }
       }
     });
   };
@@ -276,41 +150,39 @@ class LoginForm extends React.Component {
     }
     return theRequest;
   }
-  editUrl() {
-    console.log(this.state.newUrl);
-    const getNewUrl = this.props.getNewUrl
-    getNewUrl(this.state.newUrl)
-    this.setState({ isConfirmed: !this.state.isConfirmed })
-  }
 
   render() {
     const { getFieldDecorator } = this.props.form;
-    const steps = this.state.steps;
-
     return (
       <>
         <Form onSubmit={this.handleSubmit} className="login-form">
-          <Form.Item>
-            {getFieldDecorator("roomId", {
-              rules: [{ required: true, message: "Please enter your room Id!" }]
-            })(
-              <Input
-                prefix={<Icon type="team" className="login-input-icon" />}
-                placeholder="Room Id"
-              />
-            )}
+          <Form.Item
+            label="Language"
+          >{getFieldDecorator('language', {
+            initialValue: "None",
+          })(
+            <AutoComplete
+              style={{ width: "90%" }}
+              dataSource={language}
+              placeholder="None"
+              filterOption={(inputValue, option) =>
+                option.props.children.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+              }
+            />)}
           </Form.Item>
-          <Form.Item>
-            {getFieldDecorator("displayName", {
-              rules: [{ required: true, message: "Please enter your Name!" }]
-            })(
-              <Input
-                prefix={
-                  <Icon type="contacts" className="login-input-icon" />
-                }
-                placeholder="Display Name"
-              />
-            )}
+          <Form.Item
+            label="Level"
+          >{getFieldDecorator('level', {
+            initialValue: "None",
+          })(
+            <AutoComplete
+              style={{ width: "90%" }}
+              dataSource={["None", "Low", "Medium", "High"]}
+              placeholder="None"
+              filterOption={(inputValue, option) =>
+                option.props.children.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+              }
+            />)}
           </Form.Item>
           <Form.Item>
             {getFieldDecorator('audioOnly', {
@@ -319,26 +191,15 @@ class LoginForm extends React.Component {
             })(
               <Checkbox>
                 Audio only
-            </Checkbox>
+              </Checkbox>
             )}
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit" className="login-join-button">
               Join
-          </Button>
+            </Button>
           </Form.Item>
         </Form>
-        <center>
-          <Input
-            placeholder="New url : dev-rtc.sohatv.vn"
-            onChange={(val) => {
-              this.setState({ newUrl: val.target.value })
-            }}
-            value={this.state.newUrl}
-            disabled={this.state.isConfirmed}
-          />
-          <Button onClick={() => this.editUrl()}>new url</Button>
-        </center>
       </>
     );
   }

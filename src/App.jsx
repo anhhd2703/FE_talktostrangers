@@ -8,8 +8,6 @@ import "./videoview/style.scss";
 import LoginForm from "./LoginForm";
 import Conference from "./Conference";
 import { Client, IonSFUJSONRPCSignal } from "ion-sdk-js";
-import { v4 as uuidv4 } from 'uuid';
-let token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE2MDkxNDExNjcsImV4cCI6MTY0MDY3NzE2NywiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsInNpZCI6IjEyMjMifQ.2d1SncS9okWkXpt0CIfKyDzZafO3d7D7lRJsljQFC00"
 class App extends React.Component {
   constructor() {
     super();
@@ -55,19 +53,7 @@ class App extends React.Component {
     }
     return theRequest;
   }
-  // componentDidMount() {
-  //   let params = this.getRequest();
-  //   let roomId = params.room;
-  //   let displayName = params.display_name
-  //   let this2 = this
-  //   setTimeout(function () {
-  //     this2._handleJoin({
-  //       audioOnly: false,
-  //       displayName: displayName,
-  //       roomId: roomId
-  //     })
-  //   }, 1000);
-  // }
+
   _getNewUrl = (newUrl) => {
     this.setState({ newUrl: newUrl.trim() },
       () => {
@@ -78,7 +64,7 @@ class App extends React.Component {
 
   _cleanUp = async () => {
     await this.conference.cleanUp();
-    this.client.leave(this.state.loginInfo.roomId);
+    this.client.leave(this.state.loginInfo.Language);
     this.client.close();
   };
 
@@ -90,7 +76,7 @@ class App extends React.Component {
     });
   };
 
-  _createClient = (rid) => {
+  _createClient = () => {
     let newUrl = this.state.newUrl || window.location.host
     let url = "wss://" + newUrl + "/ws";
     console.log(url);
@@ -111,10 +97,14 @@ class App extends React.Component {
     return client
   }
 
+  _handleLoading = value => {
+    console.log("_handleLoading", value);
+    this.setState({ loading: value });
+  }
   _handleJoin = async values => {
     this.setState({ loading: true });
 
-    let client = this._createClient(values.roomId);
+    let client = this._createClient();
     window.onunload = async () => {
       await this._cleanUp();
     };
@@ -129,8 +119,10 @@ class App extends React.Component {
   _handleTransportOpen = async (values) => {
     reactLocalStorage.remove("loginInfo");
     reactLocalStorage.setObject("loginInfo", values);
+    console.log("--------_handleTransportOpen-------------->", values);
+
     this.rid = values.roomId;
-    await this.client.join("2134");
+    await this.client.join(this.rid);
     this.setState({
       login: true,
       loading: false,
@@ -223,7 +215,7 @@ class App extends React.Component {
   _onSendMessage = (data) => {
     console.log('Send message:' + data);
     var info = {
-      "senderName": this.state.loginInfo.displayName,
+      "senderName": this.state.loginInfo.Level,
       "msg": data,
     };
     this.client.broadcast(info);
@@ -268,10 +260,12 @@ class App extends React.Component {
           />
 
         ) : loading ? (
-          <Spin size="large" tip="Connecting..." />
+          <>
+            <Spin size="large" tip="Connecting... " />
+          </>
         ) : (
-          <Card title="Join to OVC" className="app-login-card">
-            <LoginForm handleLogin={this._handleJoin} createClient={this._createClient} getNewUrl={this._getNewUrl} />
+          <Card>
+            <LoginForm handleLogin={this._handleJoin} createClient={this._createClient} getNewUrl={this._getNewUrl} handleLoading={this._handleLoading} />
           </Card>
         )}
       </div>

@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "antd": "^3.26.16",
+    "axios": "^0.24.0",
     "copy-webpack-plugin": "^5.0.5",
     "google-protobuf": "^3.14.0",
     "grpc-web": "^1.2.1",
