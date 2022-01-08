@@ -88,7 +88,7 @@ class Conference extends React.Component {
       if (enabled) {
         localStream = await LocalStream.getUserMedia(
           {
-            audio: false,
+            audio: true,
             video: true,
             simulcast: true,
             sendEmptyOnMute: true,

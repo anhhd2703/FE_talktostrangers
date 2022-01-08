@@ -84,7 +84,7 @@ class App extends React.Component {
       const proto = this._settings.isDevMode ? "ws" : "wss"
       url = proto + "://" + window.location.host;
     }
-    url = "ws://localhost:7000/ws"
+    url = "ws://103.69.195.115:7000/ws"
     const signal = new IonSFUJSONRPCSignal(url);
     signal._onerror = (res) => {
       console.log("===================", res);

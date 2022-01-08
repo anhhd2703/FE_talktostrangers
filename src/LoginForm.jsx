@@ -117,7 +117,7 @@ class LoginForm extends React.Component {
         });
         var config = {
           method: 'POST',
-          url: 'http://localhost:8443/room',
+          url: 'http://103.69.195.115:8446/room',
           headers: {
             'Content-Type': 'application/json',
           },
