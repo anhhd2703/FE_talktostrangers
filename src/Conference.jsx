@@ -86,7 +86,25 @@ class Conference extends React.Component {
     }
     this.muteMediaTrack("video", this.props.localVideoEnabled);
   };
+  muteMediaTrack = (type, enabled) => {
 
+    let { localStream } = this.state;
+    if (!localStream) {
+      return
+    }
+    if (enabled) {
+      localStream.unmute(type)
+    } else {
+      this.state.streams[0].stream.preferLayer("low")
+      localStream.mute(type)
+    }
+
+    if (type === "audio") {
+      this.setState({ audioMuted: !enabled });
+    } else if (type === "video") {
+      this.setState({ videoMuted: !enabled });
+    }
+  };
   _handleRemoveStream = async (stream) => {
     let streams = this.state.streams;
     streams = streams.filter(item => item.sid !== stream.mid);
