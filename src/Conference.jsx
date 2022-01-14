@@ -20,52 +20,20 @@ class Conference extends React.Component {
   }
   componentDidMount = () => {
     const { client, signal } = this.props;
-    let newStream
-    let newPeer
-    signal.onnotis = (resp) => {
-      if (resp.method === "peer-remove") {
-        if (resp.params.uid === this.props.uid) {
-          this.props.forceLeave()
-        }
-
-      }
-      if (resp.method === "peer-list") {
-        this.setState(
-          {
-            users: !resp.params.peers ? [] : resp.params.peers,
-            streamInfo: !resp.params.streams ? [] : resp.params.streams
-          }
-        )
-      }
-      if (resp.method === "stream-add") {
-        newStream = resp.params.stream
-      }
-      if (resp.method === "peer-join") {
-        newPeer = resp.params
-      }
-      if (resp.method === "broadcast") {
-        this.props.onMessageReceived(resp.params.info)
-      }
-      if (resp.method === "peer-leave") {
-        let streams = this.state.streams;
-        let uidLeave = resp.params.uid
-        streams = streams.filter(item => item.stream.info.uid !== uidLeave);
-        this.setState({ streams }, () => {
-          console.log("remove stream", this.state.streams);
-        });
-      }
-    }
     client.removeTrack = (track) => {
       let streams = this.state.streams;
-      streams = streams.filter(item =>
-        item.track.id !== track.id
+      streams = streams.filter(item => {
+        if (item.hasOwnProperty("track")) {
+          if (item.track.id !== track.id) {
+            return item
+          }
+        }
+      }
       );
-      this.setState({ streams }, () => {
-        console.log("remove stream", this.state.streams);
-      });
+      this.setState({ streams });
     }
     client.onspeaker = (event) => {
-      console.log("client.onspeaker =>", Date(), event);
+      // console.log("client.onspeaker =>", Date(), event);
     }
     client.ondatachannel = ({ channel }) => {
       channel.onmessage = ({ data }) => {
@@ -116,6 +84,7 @@ class Conference extends React.Component {
     } catch (e) {
       console.log("handleLocalStream error => " + e);
     }
+    this.muteMediaTrack("video", this.props.localVideoEnabled);
   };
 
   _handleRemoveStream = async (stream) => {
@@ -144,7 +113,6 @@ class Conference extends React.Component {
           </div>
         )}
         {streams.map((item, index) => {
-          console.log("===========", item);
           return (
             <SmallVideoView
               key={item.mid}

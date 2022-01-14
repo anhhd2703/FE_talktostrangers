@@ -257,7 +257,8 @@ class App extends React.Component {
             client={this.client}
             signal={this.signal}
             settings={this._settings}
-
+            localAudioEnabled={localAudioEnabled}
+            localVideoEnabled={localVideoEnabled}
             vidFit={vidFit}
             ref={ref => {
               this.conference = ref;
