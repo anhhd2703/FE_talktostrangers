@@ -37,7 +37,7 @@
     "copy-webpack-plugin": "^5.0.5",
     "google-protobuf": "^3.14.0",
     "grpc-web": "^1.2.1",
-    "ion-sdk-js": "git+https://github.com/anhhd2703/ion-sdk-js.git#v1.5.1",
+    "ion-sdk-js": "git+https://github.com/anhhd2703/ion-sdk-js.git",
     "lodash.debounce": "^4.0.8",
     "mdi-react": "^6.4.0",
     "react": "^16.8.6",

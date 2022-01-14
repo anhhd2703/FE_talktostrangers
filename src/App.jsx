@@ -7,6 +7,8 @@ import "../styles/css/app.scss";
 import "./videoview/style.scss";
 import LoginForm from "./LoginForm";
 import Conference from "./Conference";
+import ChatFeed from './chat/index';
+import Message from './chat/message';
 import { Client, IonSFUJSONRPCSignal } from "ion-sdk-js";
 class App extends React.Component {
   constructor() {
@@ -84,7 +86,11 @@ class App extends React.Component {
       const proto = this._settings.isDevMode ? "ws" : "wss"
       url = proto + "://" + window.location.host;
     }
-    url = "ws://103.69.195.115:7000/ws"
+    // ws://localhost:7000/ws
+    // url = "ws://103.69.195.115:7000/ws"
+    url = "wss://nowtalk.fun/ws"
+
+    // url = "ws://localhost:7000/ws"
     const signal = new IonSFUJSONRPCSignal(url);
     signal._onerror = (res) => {
       console.log("===================", res);
@@ -120,7 +126,6 @@ class App extends React.Component {
     reactLocalStorage.remove("loginInfo");
     reactLocalStorage.setObject("loginInfo", values);
     console.log("--------_handleTransportOpen-------------->", values);
-
     this.rid = values.roomId;
     await this.client.join(this.rid);
     this.setState({
@@ -218,7 +223,7 @@ class App extends React.Component {
       "senderName": this.state.loginInfo.Level,
       "msg": data,
     };
-    this.client.broadcast(info);
+    this.client.chatMessage(info);
     let messages = this.state.messages;
     let uid = 0;
     messages.push(new Message({ id: uid, message: data, senderName: 'me' }));
@@ -258,7 +263,6 @@ class App extends React.Component {
               this.conference = ref;
             }}
           />
-
         ) : loading ? (
           <>
             <Spin size="large" tip="Connecting... " />

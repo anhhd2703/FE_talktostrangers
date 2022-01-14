@@ -64,6 +64,14 @@ class Conference extends React.Component {
         console.log("remove stream", this.state.streams);
       });
     }
+    client.onspeaker = (event) => {
+      console.log("client.onspeaker =>", Date(), event);
+    }
+    client.ondatachannel = ({ channel }) => {
+      channel.onmessage = ({ data }) => {
+        console.log("client.ondatachannel =>", Date(), data);
+      };
+    };
     client.ontrack = (track, stream) => {
       let streams = this.state.streams;
       if (streams.filter(st => st?.stream?.id == stream.id).length == 0) {
@@ -95,7 +103,6 @@ class Conference extends React.Component {
           }
         );
         client.publish(localStream)
-        console.log(localStream);
         let streams = this.state.streams;
         streams.push({ stream: localStream, mid: localStream.id });
         this.setState({ streams });

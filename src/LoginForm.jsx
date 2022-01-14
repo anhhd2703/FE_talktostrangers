@@ -117,7 +117,7 @@ class LoginForm extends React.Component {
         });
         var config = {
           method: 'POST',
-          url: 'http://103.69.195.115:8446/room',
+          url: 'https://nowtalk.fun/api/room',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -131,7 +131,6 @@ class LoginForm extends React.Component {
             handleLogin(info);
           }
         } catch (error) {
-          console.log("==========================================", error);
           this.props.handleLoading(false)
         }
       }
